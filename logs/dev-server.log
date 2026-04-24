@@ -1,0 +1,10 @@
+   ▲ Next.js 15.5.15
+   - Local:        http://localhost:3011
+   - Network:      http://10.90.50.55:3011
+
+ ✓ Starting...
+ ✓ Ready in 2.5s
+ ○ Compiling / ...
+ ✓ Compiled / in 2.1s (1434 modules)
+ GET / 200 in 3099ms
+ GET / 200 in 213ms
