@@ -6,7 +6,6 @@ import { TextMarquee } from "@/components/text-marquee";
 import { Globe } from "@/components/globe";
 import { SpiralAnimation } from "@/components/spiral-animation";
 import { TextScramble } from "@/components/text-scramble";
-import { DottedSurface } from "@/components/dotted-surface";
 
 const ROLES = [
   "Software Engineer",
@@ -206,24 +205,9 @@ export default function Page() {
 
   return (
     <main className="relative bg-black min-h-screen text-white overflow-hidden">
-      {(phase === "outro" || phase === "void") && (
-        <motion.div
-          className="absolute inset-0 z-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{
-            duration: OUTRO_HALF_S,
-            delay: phase === "outro" ? OUTRO_HALF_S : 0,
-            ease: "easeIn",
-          }}
-        >
-          <DottedSurface />
-        </motion.div>
-      )}
-
       {SCENE_PHASES.includes(phase) && (
         <motion.div
-          className="absolute inset-0 z-[1]"
+          className="absolute inset-0 z-0"
           initial={{ opacity: 1 }}
           animate={{ opacity: phase === "outro" ? 0 : 1 }}
           transition={{
