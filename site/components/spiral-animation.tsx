@@ -12,6 +12,9 @@ interface SpiralAnimationProps {
   reverse?: boolean;
   reverseDuration?: number;
   onReverseComplete?: () => void;
+  // When true, the rAF/timeline is suspended — use this when the spiral is
+  // hidden behind another layer (e.g. the white phase) to free up GPU.
+  paused?: boolean;
 }
 
 class Vector2D {
@@ -37,7 +40,13 @@ class AnimationController {
   private timeline: gsap.core.Timeline;
   public time = 0;
   private ctx: CanvasRenderingContext2D;
-  private size: number;
+  private width: number;
+  private height: number;
+  // Anisotropy-free scale for the central spiral effect — pinned to the
+  // shorter viewport axis so the spiral grows proportionally on widescreen
+  // monitors instead of staying tiny in the middle while the globe shrinks
+  // over the top of it.
+  private scaleFactor: number;
   private stars: Star[] = [];
   private starField: FieldStar[] = [];
   private postComplete = false;
@@ -47,20 +56,37 @@ class AnimationController {
   private readonly changeEventTime = 0.32;
   public readonly cameraZ = -400;
   private readonly cameraTravelDistance = 3400;
-  private readonly startDotYOffset = 28;
+  // 0 keeps the spiral's swirl center exactly at viewport center, which
+  // matches the point the globe vanishes into on zoom-out. Was 28 — that
+  // pushed the spiral ~28 × scaleFactor px below center (≈76 px on 4K),
+  // so the two effects didn't share a focal point.
+  private readonly startDotYOffset = 0;
   public readonly viewZoom = 100;
-  private readonly numberOfStars = 5000;
+  // Reduced from 5000 — barely affects visual density, halves the per-frame
+  // work in the active forward-spiral phase on 4K displays.
+  private readonly numberOfStars = 3000;
   private readonly trailLength = 80;
-  private readonly starFieldCount = 260;
+  private readonly starFieldBaseCount = 260;
+  private readonly baselineDim = 800;
+  // Idle starfield twinkle is purely cosmetic — render at 30 fps instead of
+  // matching the display refresh to halve the CPU/GPU work while the user
+  // is reading the troll text.
+  private readonly postCompleteFps = 30;
 
   constructor(
     ctx: CanvasRenderingContext2D,
-    size: number,
+    width: number,
+    height: number,
     duration: number,
     onComplete?: () => void,
   ) {
     this.ctx = ctx;
-    this.size = size;
+    this.width = width;
+    this.height = height;
+    this.scaleFactor = Math.max(
+      1,
+      Math.min(width, height) / this.baselineDim,
+    );
     this.startTime = performance.now();
 
     this.createStars();
@@ -87,10 +113,16 @@ class AnimationController {
   }
 
   private createStarField() {
-    for (let i = 0; i < this.starFieldCount; i++) {
+    // Density-preserving star count: scale base count with viewport area so
+    // a 4K monitor doesn't end up with a sparse-looking field while a phone
+    // gets a reasonable count.
+    const areaRatio =
+      (this.width * this.height) / (this.baselineDim * this.baselineDim);
+    const count = Math.round(this.starFieldBaseCount * Math.max(1, areaRatio));
+    for (let i = 0; i < count; i++) {
       this.starField.push({
-        x: (Math.random() - 0.5) * this.size,
-        y: (Math.random() - 0.5) * this.size,
+        x: (Math.random() - 0.5) * this.width,
+        y: (Math.random() - 0.5) * this.height,
         r: Math.random() * 1.1 + 0.3,
         phase: Math.random() * Math.PI * 2,
         twinkleSpeed: Math.random() * 0.6 + 0.4,
@@ -99,11 +131,31 @@ class AnimationController {
   }
 
   private startPostCompleteLoop() {
-    const tick = () => {
-      this.render();
+    const targetInterval = 1000 / this.postCompleteFps;
+    let lastRender = 0;
+    const tick = (now: number) => {
+      if (now - lastRender >= targetInterval) {
+        this.render();
+        lastRender = now;
+      }
       this.postCompleteRafId = requestAnimationFrame(tick);
     };
     this.postCompleteRafId = requestAnimationFrame(tick);
+  }
+
+  public setPaused(paused: boolean) {
+    if (paused) {
+      this.timeline.pause();
+      if (this.postCompleteRafId !== null) {
+        cancelAnimationFrame(this.postCompleteRafId);
+        this.postCompleteRafId = null;
+      }
+    } else {
+      this.timeline.resume();
+      if (this.postComplete && this.postCompleteRafId === null) {
+        this.startPostCompleteLoop();
+      }
+    }
   }
 
   private renderStarField(opacity: number) {
@@ -202,21 +254,26 @@ class AnimationController {
     if (!ctx) return;
 
     ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, this.size, this.size);
+    ctx.fillRect(0, 0, this.width, this.height);
 
-    // Starfield: ramps in during 50-100% of spiral, then persists with twinkle.
+    // Starfield rendered in raw viewport space — stars stay the same physical
+    // size on every screen and naturally fill the entire viewport.
     const starOpacity = this.postComplete
       ? 1
       : Math.max(0, (this.time - 0.5) * 2);
     ctx.save();
-    ctx.translate(this.size / 2, this.size / 2);
+    ctx.translate(this.width / 2, this.height / 2);
     this.renderStarField(starOpacity);
     ctx.restore();
 
     if (this.postComplete) return;
 
+    // Central spiral effect is uniformly scaled by `scaleFactor`, so the
+    // visible region grows on larger viewports (otherwise the shrinking
+    // globe covers it entirely on a desktop monitor).
     ctx.save();
-    ctx.translate(this.size / 2, this.size / 2);
+    ctx.translate(this.width / 2, this.height / 2);
+    ctx.scale(this.scaleFactor, this.scaleFactor);
 
     const t1 = this.constrain(this.map(this.time, 0, this.changeEventTime + 0.25, 0, 1), 0, 1);
     const t2 = this.constrain(this.map(this.time, this.changeEventTime, 1, 0, 1), 0, 1);
@@ -400,6 +457,7 @@ export function SpiralAnimation({
   reverse = false,
   reverseDuration,
   onReverseComplete,
+  paused = false,
 }: SpiralAnimationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<AnimationController | null>(null);
@@ -429,6 +487,10 @@ export function SpiralAnimation({
   }, [reverse]);
 
   useEffect(() => {
+    animationRef.current?.setPaused(paused);
+  }, [paused]);
+
+  useEffect(() => {
     const handleResize = () => {
       setDimensions({ width: window.innerWidth, height: window.innerHeight });
     };
@@ -444,18 +506,25 @@ export function SpiralAnimation({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
-    const size = Math.max(dimensions.width, dimensions.height);
+    // Cap DPR at 1.5: on 4K laptops `devicePixelRatio` is often 2 (and the
+    // canvas covers the full viewport), which means 4× the pixel work vs.
+    // a 1080p display for imperceptible visual gain. Cobe's globe canvas
+    // does the same cap at 2 — we go a touch further because this canvas
+    // is much larger.
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
+    // Buffer matches viewport 1:1 (in CSS pixels) so the spiral isn't
+    // anisotropically squished on widescreen displays.
+    canvas.width = dimensions.width * dpr;
+    canvas.height = dimensions.height * dpr;
     canvas.style.width = `${dimensions.width}px`;
     canvas.style.height = `${dimensions.height}px`;
     ctx.scale(dpr, dpr);
 
     animationRef.current = new AnimationController(
       ctx,
-      size,
+      dimensions.width,
+      dimensions.height,
       duration,
       () => onCompleteRef.current?.(),
     );
