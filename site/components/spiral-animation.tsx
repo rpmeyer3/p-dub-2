@@ -7,6 +7,11 @@ interface SpiralAnimationProps {
   duration?: number;
   onComplete?: () => void;
   className?: string;
+  // When toggled true, the spiral plays its existing animation in reverse
+  // (time tweens from current value back to 0) over `reverseDuration`.
+  reverse?: boolean;
+  reverseDuration?: number;
+  onReverseComplete?: () => void;
 }
 
 class Vector2D {
@@ -255,6 +260,25 @@ class AnimationController {
     }
   }
 
+  public reverse(duration: number, onReverseComplete?: () => void) {
+    if (this.postCompleteRafId !== null) {
+      cancelAnimationFrame(this.postCompleteRafId);
+      this.postCompleteRafId = null;
+    }
+    this.postComplete = false;
+    this.timeline.kill();
+    this.timeline = gsap.timeline();
+    this.timeline.to(this, {
+      time: 0,
+      duration,
+      ease: "none",
+      onUpdate: () => this.render(),
+      onComplete: () => {
+        onReverseComplete?.();
+      },
+    });
+  }
+
   public destroy() {
     this.timeline.kill();
     if (this.postCompleteRafId !== null) {
@@ -369,15 +393,40 @@ class Star {
   }
 }
 
-export function SpiralAnimation({ duration = 5, onComplete, className }: SpiralAnimationProps) {
+export function SpiralAnimation({
+  duration = 5,
+  onComplete,
+  className,
+  reverse = false,
+  reverseDuration,
+  onReverseComplete,
+}: SpiralAnimationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<AnimationController | null>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
   const onCompleteRef = useRef(onComplete);
+  const onReverseCompleteRef = useRef(onReverseComplete);
+  const reverseDurationRef = useRef(reverseDuration ?? duration);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
+
+  useEffect(() => {
+    onReverseCompleteRef.current = onReverseComplete;
+  }, [onReverseComplete]);
+
+  useEffect(() => {
+    reverseDurationRef.current = reverseDuration ?? duration;
+  }, [reverseDuration, duration]);
+
+  useEffect(() => {
+    if (!reverse) return;
+    animationRef.current?.reverse(
+      reverseDurationRef.current,
+      () => onReverseCompleteRef.current?.(),
+    );
+  }, [reverse]);
 
   useEffect(() => {
     const handleResize = () => {

@@ -6,6 +6,7 @@ import { TextMarquee } from "@/components/text-marquee";
 import { Globe } from "@/components/globe";
 import { SpiralAnimation } from "@/components/spiral-animation";
 import { TextScramble } from "@/components/text-scramble";
+import { DottedSurface } from "@/components/dotted-surface";
 
 const ROLES = [
   "Software Engineer",
@@ -26,12 +27,42 @@ const ATLANTA = {
 const ATLANTA_PHI = -1.473;
 const LANDING_PHI = ATLANTA_PHI + Math.PI / 2;
 
-type Phase = "marquee" | "transition" | "globe" | "expand" | "white";
+type Phase =
+  | "marquee"
+  | "transition"
+  | "globe"
+  | "expand"
+  | "white"
+  | "outro"
+  | "void";
 type DialogStep = "none" | "right" | "left" | "bottom";
 
 const SPIRAL_DURATION = 5; // seconds
 const GLOBE_REVEAL_AT = 2.5;
 const GLOBE_REVEAL_DURATION = SPIRAL_DURATION - GLOBE_REVEAL_AT;
+// Click 2 in the white phase shrinks both troll boxes to nothing. Phase flips
+// to "outro" when the shrink finishes — globe reverse-scales back to 1, then
+// keeps shrinking past the stars while the dotted-surface fades in. After
+// OUTRO_DURATION_S we settle on "void" — only the dotted surface remains.
+const WHITE_SHRINK_MS = 900;
+const OUTRO_DURATION_S = 3.0;
+const OUTRO_DURATION_MS = OUTRO_DURATION_S * 1000;
+// Globe scale keyframes: held at 28 during white, reverses to 1 (~40% of
+// the journey), then continues to 0 — the globe vanishes entirely before
+// the spiral fades out, so it never appears as a stuck dot on the dotted
+// surface.
+const OUTRO_SCALE_KEYFRAMES = [28, 1, 0];
+const OUTRO_SCALE_TIMES = [0, 0.4, 1];
+// "in the middle start the transition" — spiral fades + recedes from 50%,
+// dotted surface fades in from 50%.
+const OUTRO_HALF_S = OUTRO_DURATION_S / 2;
+const SCENE_PHASES: Phase[] = [
+  "transition",
+  "globe",
+  "expand",
+  "white",
+  "outro",
+];
 
 type UserLocation = {
   city: string;
@@ -103,7 +134,7 @@ export default function Page() {
   useEffect(() => {
     if (phase !== "white") return;
     const advance = () => {
-      setTrollStep((prev) => Math.min(prev + 1, 1));
+      setTrollStep((prev) => Math.min(prev + 1, 2));
     };
     window.addEventListener("click", advance);
     window.addEventListener("touchstart", advance, { passive: true });
@@ -113,6 +144,18 @@ export default function Page() {
       window.removeEventListener("touchstart", advance);
       window.removeEventListener("keydown", advance);
     };
+  }, [phase]);
+
+  useEffect(() => {
+    if (trollStep !== 2) return;
+    const t = setTimeout(() => setPhase("outro"), WHITE_SHRINK_MS);
+    return () => clearTimeout(t);
+  }, [trollStep]);
+
+  useEffect(() => {
+    if (phase !== "outro") return;
+    const t = setTimeout(() => setPhase("void"), OUTRO_DURATION_MS);
+    return () => clearTimeout(t);
   }, [phase]);
 
   useEffect(() => {
@@ -138,6 +181,7 @@ export default function Page() {
   }, [dialogStep]);
 
   const markers = useMemo(() => {
+    if (phase === "outro") return [];
     if (
       userLocation &&
       (dialogStep === "left" || dialogStep === "bottom")
@@ -158,19 +202,43 @@ export default function Page() {
       ];
     }
     return [ATLANTA];
-  }, [userLocation, dialogStep]);
+  }, [userLocation, dialogStep, phase]);
 
   return (
     <main className="relative bg-black min-h-screen text-white overflow-hidden">
-      {(phase === "transition" ||
-        phase === "globe" ||
-        phase === "expand") && (
-        <div className="absolute inset-0 z-0">
+      {(phase === "outro" || phase === "void") && (
+        <motion.div
+          className="absolute inset-0 z-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{
+            duration: OUTRO_HALF_S,
+            delay: phase === "outro" ? OUTRO_HALF_S : 0,
+            ease: "easeIn",
+          }}
+        >
+          <DottedSurface />
+        </motion.div>
+      )}
+
+      {SCENE_PHASES.includes(phase) && (
+        <motion.div
+          className="absolute inset-0 z-[1]"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: phase === "outro" ? 0 : 1 }}
+          transition={{
+            duration: phase === "outro" ? OUTRO_HALF_S : 0,
+            delay: phase === "outro" ? OUTRO_HALF_S : 0,
+            ease: "easeOut",
+          }}
+        >
           <SpiralAnimation
             duration={SPIRAL_DURATION}
             onComplete={() => setPhase("globe")}
+            reverse={phase === "outro"}
+            reverseDuration={OUTRO_DURATION_S}
           />
-        </div>
+        </motion.div>
       )}
 
       <div className="relative z-10 min-h-screen">
@@ -201,20 +269,29 @@ export default function Page() {
             </motion.div>
           )}
 
-          {(phase === "transition" ||
-            phase === "globe" ||
-            phase === "expand") && (
+          {SCENE_PHASES.includes(phase) && (
             <motion.div
               key="globe"
               className="absolute inset-0 flex items-center justify-center px-6"
               initial={{ opacity: 0, scale: 0.01 }}
               animate={{
                 opacity: 1,
-                scale: phase === "expand" ? 28 : 1,
+                scale:
+                  phase === "outro"
+                    ? OUTRO_SCALE_KEYFRAMES
+                    : phase === "expand" || phase === "white"
+                    ? 28
+                    : 1,
               }}
               transition={
                 phase === "expand"
                   ? { duration: 1.0, ease: [0.55, 0, 0.85, 0.25] }
+                  : phase === "outro"
+                  ? {
+                      duration: OUTRO_DURATION_S,
+                      times: OUTRO_SCALE_TIMES,
+                      ease: "easeInOut",
+                    }
                   : {
                       delay: phase === "transition" ? GLOBE_REVEAL_AT : 0,
                       duration: GLOBE_REVEAL_DURATION,
@@ -231,7 +308,7 @@ export default function Page() {
                 />
 
                 <AnimatePresence>
-                  {dialogStep === "right" && (
+                  {phase === "globe" && dialogStep === "right" && (
                     <motion.div
                       key="dialog-right"
                       className="absolute top-3 right-3 md:top-5 md:right-5 max-w-[42%]"
@@ -248,7 +325,7 @@ export default function Page() {
                       </TextScramble>
                     </motion.div>
                   )}
-                  {dialogStep === "left" && (
+                  {phase === "globe" && dialogStep === "left" && (
                     <motion.div
                       key="dialog-left"
                       className="absolute top-3 left-3 md:top-5 md:left-5 max-w-[42%]"
@@ -265,7 +342,7 @@ export default function Page() {
                       </TextScramble>
                     </motion.div>
                   )}
-                  {dialogStep === "bottom" && (
+                  {phase === "globe" && dialogStep === "bottom" && (
                     <motion.div
                       key="dialog-bottom"
                       className="absolute -bottom-2 -right-5 md:-bottom-1 md:-right-8 max-w-[42%]"
@@ -293,9 +370,10 @@ export default function Page() {
         {(phase === "expand" || phase === "white") && (
           <motion.div
             key="white-overlay"
-            className="absolute inset-0 z-40 bg-white flex flex-col items-center justify-center px-6 text-center text-black"
+            className="absolute inset-0 z-40 bg-white text-black"
             initial={{ opacity: phase === "white" ? 1 : 0 }}
             animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.5, ease: "easeOut" } }}
             transition={{ duration: 0.7, ease: "easeIn", delay: 0.3 }}
             onAnimationComplete={() => {
               if (phase === "expand") setPhase("white");
@@ -310,18 +388,21 @@ export default function Page() {
 }
 
 function WhitePageContent({ trollStep }: { trollStep: number }) {
+  // trollStep 2 shrinks both boxes in place to scale 0 and fades them out —
+  // reads as the boxes "zooming away" until they vanish.
+  const shrinkDuration = WHITE_SHRINK_MS / 1000;
+  const shrinkTransition = { duration: shrinkDuration, ease: "easeIn" } as const;
+  const shrinkTarget = { opacity: 0, scale: 0 };
+
   return (
     <>
       <motion.div
-        className="absolute left-[12%] top-[32%] md:left-[18%] md:top-[34%] max-w-[60%] md:max-w-[42%]"
+        className="absolute left-[12%] top-[32%] md:left-[18%] md:top-[34%] max-w-[60%] md:max-w-[42%] font-mono text-xs md:text-sm uppercase tracking-[0.08em] text-black"
         initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: "easeOut" }}
+        animate={trollStep === 2 ? shrinkTarget : { opacity: 1, y: 0, scale: 1 }}
+        transition={trollStep === 2 ? shrinkTransition : { duration: 0.45, ease: "easeOut" }}
       >
-        <TextScramble
-          as="span"
-          className="font-mono text-xs md:text-sm uppercase tracking-[0.08em] text-black"
-        >
+        <TextScramble as="span">
           nothing, I&apos;m just trolling
         </TextScramble>
       </motion.div>
@@ -329,15 +410,12 @@ function WhitePageContent({ trollStep }: { trollStep: number }) {
         {trollStep >= 1 && (
           <motion.div
             key="troll-2"
-            className="absolute right-[12%] bottom-[32%] md:right-[18%] md:bottom-[34%] max-w-[60%] md:max-w-[42%] text-right"
+            className="absolute right-[12%] bottom-[32%] md:right-[18%] md:bottom-[34%] max-w-[60%] md:max-w-[42%] text-right font-mono text-xs md:text-sm uppercase tracking-[0.08em] text-black"
             initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: "easeOut" }}
+            animate={trollStep === 2 ? shrinkTarget : { opacity: 1, y: 0, scale: 1 }}
+            transition={trollStep === 2 ? shrinkTransition : { duration: 0.45, ease: "easeOut" }}
           >
-            <TextScramble
-              as="span"
-              className="font-mono text-xs md:text-sm uppercase tracking-[0.08em] text-black"
-            >
+            <TextScramble as="span">
               but thanks for visiting the website
             </TextScramble>
           </motion.div>
