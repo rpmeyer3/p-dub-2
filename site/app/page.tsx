@@ -7,6 +7,7 @@ import { Globe } from "@/components/globe";
 import { SpiralAnimation } from "@/components/spiral-animation";
 import { TextScramble } from "@/components/text-scramble";
 import { BackgroundPaths } from "@/components/background-paths";
+import { useIsMobile } from "@/lib/use-is-mobile";
 
 const ROLES = [
   "Software Engineer",
@@ -47,11 +48,13 @@ const GLOBE_REVEAL_DURATION = SPIRAL_DURATION - GLOBE_REVEAL_AT;
 const WHITE_SHRINK_MS = 900;
 const OUTRO_DURATION_S = 3.0;
 const OUTRO_DURATION_MS = OUTRO_DURATION_S * 1000;
-// Globe scale keyframes: held at 28 during white, reverses to 1 (~40% of
+// Globe scale keyframes: held at MAX during white, reverses to 1 (~40% of
 // the journey), then continues to 0 — the globe vanishes entirely before
-// the spiral fades out, so it never appears as a stuck dot on the dotted
-// surface.
-const OUTRO_SCALE_KEYFRAMES = [28, 1, 0];
+// the spiral fades out, so it never appears as a stuck dot. The MAX is
+// adaptive: 28× fills a desktop viewport, while 16× still fully covers a
+// phone screen without the absurd over-zoom that 28× implies on 375 px wide.
+const EXPAND_SCALE_DESKTOP = 28;
+const EXPAND_SCALE_MOBILE = 16;
 const OUTRO_SCALE_TIMES = [0, 0.4, 1];
 // "in the middle start the transition" — spiral fades + recedes from 50%,
 // dotted surface fades in from 50%.
@@ -82,6 +85,13 @@ export default function Page() {
   const armedRef = useRef(false);
   const fetchedRef = useRef(false);
   const skippingRef = useRef(false);
+
+  const isMobile = useIsMobile();
+  const expandScale = isMobile ? EXPAND_SCALE_MOBILE : EXPAND_SCALE_DESKTOP;
+  const outroScaleKeyframes = useMemo(
+    () => [expandScale, 1, 0],
+    [expandScale],
+  );
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -300,9 +310,9 @@ export default function Page() {
                 opacity: 1,
                 scale:
                   phase === "outro"
-                    ? OUTRO_SCALE_KEYFRAMES
+                    ? outroScaleKeyframes
                     : phase === "expand" || phase === "white"
-                    ? 28
+                    ? expandScale
                     : 1,
               }}
               transition={
