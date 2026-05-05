@@ -108,13 +108,9 @@ export default function Page() {
       setPhase("transition");
     };
     window.addEventListener("click", advance);
-    window.addEventListener("mousemove", advance);
-    window.addEventListener("touchstart", advance, { passive: true });
     window.addEventListener("keydown", advance);
     return () => {
       window.removeEventListener("click", advance);
-      window.removeEventListener("mousemove", advance);
-      window.removeEventListener("touchstart", advance);
       window.removeEventListener("keydown", advance);
     };
   }, [phase]);
