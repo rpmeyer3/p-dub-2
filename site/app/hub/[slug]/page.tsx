@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { timelineData } from "@/lib/timeline-data";
-import { NodeScene, type NodeSlug } from "@/components/scenes/node-scene";
-import { NodeOverlay } from "@/components/scenes/node-overlay";
+import {
+  NodeOverlay,
+  type NodeSlug,
+} from "@/components/scenes/node-overlay";
 
-const VALID_SLUGS = new Set<string>([
+const VALID_SLUGS = new Set<NodeSlug>([
   "about",
   "projects",
   "experience",
@@ -35,14 +37,11 @@ export default async function NodePage({
 }) {
   const { slug } = await params;
   const node = timelineData.find((n) => n.slug === slug);
-  if (!node || !VALID_SLUGS.has(slug)) notFound();
-
-  const typedSlug = slug as NodeSlug;
+  if (!node || !VALID_SLUGS.has(slug as NodeSlug)) notFound();
 
   return (
     <main className="bg-black text-white">
-      <NodeScene slug={typedSlug} />
-      <NodeOverlay slug={typedSlug} />
+      <NodeOverlay slug={slug as NodeSlug} />
     </main>
   );
 }

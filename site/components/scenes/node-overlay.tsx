@@ -8,8 +8,14 @@ import {
   contactContent,
   skillsContent,
 } from "@/lib/node-content";
-import type { NodeSlug } from "@/components/scenes/node-scene";
 import { TitleSparkles } from "@/components/sparkles";
+
+export type NodeSlug =
+  | "about"
+  | "projects"
+  | "experience"
+  | "education"
+  | "contact";
 
 const SLUG_TITLE: Record<NodeSlug, string> = {
   about: "About",
