@@ -317,6 +317,8 @@ export const SparklesCore = (props: ParticlesProps) => {
 /**
  * Thin sparkles strip rendered under a heading. Defaults are tuned for an
  * understated band — bump particleDensity / maxSize for a denser look.
+ * On small viewports the density is automatically halved so phones don't
+ * thrash six concurrent particle systems.
  */
 export function TitleSparkles({
   className,
@@ -327,6 +329,19 @@ export function TitleSparkles({
   particleDensity?: number;
   particleColor?: string;
 }) {
+  const [effectiveDensity, setEffectiveDensity] = useState(particleDensity);
+
+  useEffect(() => {
+    const apply = () => {
+      const isSmall = window.matchMedia("(max-width: 767px)").matches;
+      setEffectiveDensity(isSmall ? Math.round(particleDensity / 2) : particleDensity);
+    };
+    apply();
+    const mq = window.matchMedia("(max-width: 767px)");
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [particleDensity]);
+
   return (
     <div
       className={cn("relative w-full h-8 mt-2", className)}
@@ -336,7 +351,7 @@ export function TitleSparkles({
         background="transparent"
         minSize={0.4}
         maxSize={1}
-        particleDensity={particleDensity}
+        particleDensity={effectiveDensity}
         particleColor={particleColor}
         className="w-full h-full"
       />

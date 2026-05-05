@@ -21,7 +21,7 @@ const SLUG_TITLE: Record<NodeSlug, string> = {
 
 export function NodeOverlay({ slug }: { slug: NodeSlug }) {
   return (
-    <div className="min-h-[400vh] text-white">
+    <div className="min-h-[400dvh] text-white">
       <header className="sticky top-0 z-20 px-6 md:px-10 pt-6 pb-2 backdrop-blur-sm bg-black/30">
         <Link
           href="/hub"
@@ -32,7 +32,7 @@ export function NodeOverlay({ slug }: { slug: NodeSlug }) {
         </Link>
       </header>
 
-      <section className="min-h-[100vh] flex items-center justify-center px-6">
+      <section className="min-h-[100dvh] flex items-center justify-center px-6">
         <div className="max-w-3xl w-full">
           <p className="text-xs font-mono uppercase tracking-[0.08em] text-white/50 mb-4">
             {slug}
@@ -50,7 +50,7 @@ export function NodeOverlay({ slug }: { slug: NodeSlug }) {
       {slug === "education" && <EducationOverlay />}
       {slug === "contact" && <ContactOverlay />}
 
-      <footer className="min-h-[40vh] flex items-end justify-center pb-16 text-xs font-mono uppercase tracking-[0.08em] text-white/30">
+      <footer className="min-h-[40dvh] flex items-end justify-center pb-16 text-xs font-mono uppercase tracking-[0.08em] text-white/30">
         ↓ keep scrolling, or press ↑ to return
       </footer>
     </div>
@@ -66,7 +66,7 @@ function Section({
 }) {
   return (
     <section
-      className={`min-h-[80vh] flex items-center justify-center px-6 py-16 ${className}`}
+      className={`min-h-[80dvh] flex items-center justify-center px-6 py-16 ${className}`}
     >
       <div className="max-w-3xl w-full">{children}</div>
     </section>
