@@ -9,6 +9,7 @@ import {
   skillsContent,
 } from "@/lib/node-content";
 import type { NodeSlug } from "@/components/scenes/node-scene";
+import { TitleSparkles } from "@/components/sparkles";
 
 const SLUG_TITLE: Record<NodeSlug, string> = {
   about: "About",
@@ -32,13 +33,14 @@ export function NodeOverlay({ slug }: { slug: NodeSlug }) {
       </header>
 
       <section className="min-h-[100vh] flex items-center justify-center px-6">
-        <div className="max-w-3xl">
+        <div className="max-w-3xl w-full">
           <p className="text-xs font-mono uppercase tracking-[0.08em] text-white/50 mb-4">
             {slug}
           </p>
           <h1 className="text-6xl md:text-7xl font-bold tracking-tight">
             {SLUG_TITLE[slug]}
           </h1>
+          <TitleSparkles className="h-12 mt-4" particleDensity={1000} />
         </div>
       </section>
 
@@ -163,6 +165,7 @@ function ProjectsOverlay() {
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
               {p.name}
             </h2>
+            <TitleSparkles />
             <p className="mt-2 text-base md:text-lg text-white/60 italic">
               {p.tagline}
             </p>
@@ -236,6 +239,7 @@ function ExperienceOverlay() {
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
               {e.role}
             </h2>
+            <TitleSparkles />
             <p className="mt-1 text-lg text-white/70">
               {e.org}
               {e.location ? (
@@ -272,6 +276,7 @@ function EducationOverlay() {
         <div key={e.school} className="mb-10">
           <SectionLabel>{e.period}</SectionLabel>
           <h2 className="text-3xl font-bold tracking-tight">{e.school}</h2>
+          <TitleSparkles />
           <p className="mt-1 text-lg text-white/70">
             {e.degree}
             {e.location ? (

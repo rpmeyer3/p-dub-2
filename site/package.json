@@ -11,6 +11,9 @@
   "dependencies": {
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
+    "@tsparticles/engine": "^3.9.1",
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.9.1",
     "animejs": "^4.4.1",
     "clsx": "^2.1.1",
     "cobe": "^2.0.1",
