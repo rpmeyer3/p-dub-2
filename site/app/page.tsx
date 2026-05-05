@@ -269,7 +269,7 @@ export default function Page() {
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 min-h-screen pointer-events-none">
+      <div className="relative z-10 min-h-screen pointer-events-none scale-75 md:scale-100 origin-center">
         <AnimatePresence>
           {phase === "marquee" && (
             <motion.div
@@ -280,20 +280,26 @@ export default function Page() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <TextMarquee
-                speed={1.2}
-                className="text-3xl md:text-4xl font-bold tracking-tight"
-                prefix={
-                  <span>
-                    Ryan Meyer
-                    <span className="mx-3 text-white/40 font-light">|</span>
-                  </span>
-                }
-              >
-                {ROLES.map((role) => (
-                  <span key={role}>{role}</span>
-                ))}
-              </TextMarquee>
+              {isMobile ? (
+                <span className="text-4xl font-bold tracking-tight">
+                  Ryan Meyer
+                </span>
+              ) : (
+                <TextMarquee
+                  speed={1.2}
+                  className="text-3xl md:text-4xl font-bold tracking-tight"
+                  prefix={
+                    <span>
+                      Ryan Meyer
+                      <span className="mx-3 text-white/40 font-light">|</span>
+                    </span>
+                  }
+                >
+                  {ROLES.map((role) => (
+                    <span key={role}>{role}</span>
+                  ))}
+                </TextMarquee>
+              )}
             </motion.div>
           )}
 
@@ -423,7 +429,7 @@ function WhitePageContent({ trollStep }: { trollStep: number }) {
   const shrinkTarget = { opacity: 0, scale: 0 };
 
   return (
-    <>
+    <div className="absolute inset-0 scale-75 md:scale-100 origin-center">
       <motion.div
         className="absolute left-[12%] top-[32%] md:left-[18%] md:top-[34%] max-w-[60%] md:max-w-[42%] font-mono text-xs md:text-sm uppercase tracking-[0.08em] text-black"
         initial={{ opacity: 0, y: -6 }}
@@ -449,7 +455,7 @@ function WhitePageContent({ trollStep }: { trollStep: number }) {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }
 
