@@ -116,20 +116,27 @@ export const skillsContent: SkillGroup[] = [
 
 export const projectsContent: ProjectInfo[] = [
   {
-    name: "FreshKeep",
-    tagline: "Receipt-scanning pantry tracker — CSCI 4800 HCI hi-fi prototype.",
+    name: "Freshkeep",
+    tagline:
+      "Mobile receipt-scanning pantry tracker with TF-IDF item matching against 661 USDA FoodKeeper entries.",
     description:
-      "Mobile-first concept for FreshKeep: scan a grocery receipt, auto-populate the pantry with expiration timers, and surface recipe suggestions from what you already own. Single-page web demo with Kroger integration, push notifications, and an AI chatbot for conversational pantry management. Group 11 milestone-5 prototype.",
+      "React Native (Expo) mobile app that scans grocery receipts via OCR, fuzzy-matches each line item against 661 USDA FoodKeeper entries using TF-IDF, and tracks expiration dates with push reminders. The FastAPI backend on Supabase handles RLS plus JWT auth, household sharing across multiple users, and waste-tracking analytics.",
     period: "Spring 2026",
-    tech: ["HTML5", "CSS3", "JavaScript", "Vercel"],
-    highlights: [
-      "Receipt scanning → auto-pantry population with expiration timers",
-      "Recipe suggestions from available ingredients",
-      "Kroger integration + AI chatbot",
-      "CSCI 4800 HCI, UGA Spring 2026 — Group 11",
+    tech: [
+      "React Native",
+      "Expo",
+      "FastAPI",
+      "Supabase",
+      "scikit-learn",
+      "TF-IDF",
+      "OCR",
     ],
-    repo: "https://github.com/rpmeyer3/Lichen",
-    live: "https://m5-demo.vercel.app",
+    highlights: [
+      "OCR receipt scanning with TF-IDF matching against 661 USDA FoodKeeper entries",
+      "Push reminders for upcoming expirations",
+      "Household sharing with Supabase RLS plus JWT auth",
+      "Waste-tracking analytics dashboard",
+    ],
   },
   {
     name: "Byte's Bank",
