@@ -81,6 +81,7 @@ export default function Page() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const armedRef = useRef(false);
   const fetchedRef = useRef(false);
+  const skippingRef = useRef(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -93,6 +94,7 @@ export default function Page() {
     if (phase !== "marquee") return;
     const advance = () => {
       if (!armedRef.current) return;
+      if (skippingRef.current) return;
       setPhase("transition");
     };
     window.addEventListener("click", advance);
@@ -106,6 +108,14 @@ export default function Page() {
       window.removeEventListener("keydown", advance);
     };
   }, [phase]);
+
+  const handleSkip = (e: React.MouseEvent | React.TouchEvent) => {
+    // Block the marquee-phase advance handler from racing the state update.
+    skippingRef.current = true;
+    e.nativeEvent.stopImmediatePropagation();
+    e.preventDefault();
+    setPhase("void");
+  };
 
   useEffect(() => {
     if (phase !== "globe") return;
@@ -206,6 +216,18 @@ export default function Page() {
 
   return (
     <main className="relative bg-black min-h-screen text-white overflow-hidden">
+      {phase === "marquee" && (
+        <button
+          type="button"
+          onClick={handleSkip}
+          onTouchStart={handleSkip}
+          className="absolute top-4 right-4 md:top-6 md:right-6 z-50 px-3 py-2 font-mono text-[11px] md:text-xs uppercase tracking-[0.12em] text-white/60 hover:text-white active:text-white border border-white/20 hover:border-white/60 active:border-white rounded-sm transition-colors backdrop-blur-sm bg-black/30"
+          aria-label="Skip the intro animation and go directly to the welcome page"
+        >
+          skip intro <span aria-hidden className="ml-1">→</span>
+        </button>
+      )}
+
       {SCENE_PHASES.includes(phase) && (
         <motion.div
           className="absolute inset-0 z-0"
