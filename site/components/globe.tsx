@@ -74,8 +74,15 @@ export function Globe({
   const isPausedRef = useRef(false);
   const phiRef = useRef(initialPhi);
   const speedRef = useRef(speed);
-  const markersRef = useRef(markers);
-  const arcsRef = useRef(arcs);
+  // Pre-shaped marker/arc arrays in cobe's expected format. Cached when
+  // props change so the rAF loop doesn't allocate 60 fresh arrays + 60×N
+  // fresh objects per second (heavier than it sounds with GC pressure).
+  const cobeMarkersRef = useRef(
+    markers.map((m) => ({ location: m.location, size: markerSize, id: m.id })),
+  );
+  const cobeArcsRef = useRef(
+    arcs.map((a) => ({ from: a.from, to: a.to, id: a.id })),
+  );
 
   useEffect(() => {
     phiRef.current = initialPhi;
@@ -86,11 +93,19 @@ export function Globe({
   }, [speed]);
 
   useEffect(() => {
-    markersRef.current = markers;
-  }, [markers]);
+    cobeMarkersRef.current = markers.map((m) => ({
+      location: m.location,
+      size: markerSize,
+      id: m.id,
+    }));
+  }, [markers, markerSize]);
 
   useEffect(() => {
-    arcsRef.current = arcs;
+    cobeArcsRef.current = arcs.map((a) => ({
+      from: a.from,
+      to: a.to,
+      id: a.id,
+    }));
   }, [arcs]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -171,16 +186,8 @@ export function Globe({
         markerColor,
         glowColor,
         markerElevation,
-        markers: markersRef.current.map((m) => ({
-          location: m.location,
-          size: markerSize,
-          id: m.id,
-        })),
-        arcs: arcsRef.current.map((a) => ({
-          from: a.from,
-          to: a.to,
-          id: a.id,
-        })),
+        markers: cobeMarkersRef.current,
+        arcs: cobeArcsRef.current,
         arcColor,
         arcWidth,
         arcHeight,
@@ -218,16 +225,8 @@ export function Globe({
           baseColor,
           arcColor,
           markerElevation,
-          markers: markersRef.current.map((m) => ({
-            location: m.location,
-            size: markerSize,
-            id: m.id,
-          })),
-          arcs: arcsRef.current.map((a) => ({
-            from: a.from,
-            to: a.to,
-            id: a.id,
-          })),
+          markers: cobeMarkersRef.current,
+          arcs: cobeArcsRef.current,
         } as Parameters<NonNullable<typeof globe>["update"]>[0]);
         animationId = requestAnimationFrame(animate);
       }

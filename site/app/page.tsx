@@ -6,6 +6,7 @@ import { TextMarquee } from "@/components/text-marquee";
 import { Globe } from "@/components/globe";
 import { SpiralAnimation } from "@/components/spiral-animation";
 import { TextScramble } from "@/components/text-scramble";
+import { BackgroundPaths } from "@/components/background-paths";
 
 const ROLES = [
   "Software Engineer",
@@ -221,11 +222,26 @@ export default function Page() {
             onComplete={() => setPhase("globe")}
             reverse={phase === "outro"}
             reverseDuration={OUTRO_DURATION_S}
+            paused={phase === "white"}
           />
         </motion.div>
       )}
 
-      <div className="relative z-10 min-h-screen">
+      <AnimatePresence>
+        {phase === "void" && (
+          <motion.div
+            key="welcome"
+            className="absolute inset-0 z-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, ease: "easeIn" }}
+          >
+            <BackgroundPaths />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="relative z-10 min-h-screen pointer-events-none">
         <AnimatePresence>
           {phase === "marquee" && (
             <motion.div
@@ -256,7 +272,7 @@ export default function Page() {
           {SCENE_PHASES.includes(phase) && (
             <motion.div
               key="globe"
-              className="absolute inset-0 flex items-center justify-center px-6"
+              className="absolute inset-0 flex items-center justify-center px-6 pointer-events-auto"
               initial={{ opacity: 0, scale: 0.01 }}
               animate={{
                 opacity: 1,

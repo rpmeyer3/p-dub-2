@@ -1,6 +1,6 @@
 "use client";
 
-import { type JSX, useEffect, useMemo, useState } from "react";
+import { type JSX, useEffect, useMemo, useRef, useState } from "react";
 import { motion, MotionProps } from "framer-motion";
 
 type TextScrambleProps = {
@@ -33,17 +33,18 @@ export function TextScramble({
     [Component],
   );
   const [displayText, setDisplayText] = useState(children);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const animatingRef = useRef(false);
   const text = children;
 
-  const scramble = async () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
+  const scramble = () => {
+    if (animatingRef.current) return;
+    animatingRef.current = true;
 
     const steps = duration / speed;
     let step = 0;
 
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       let scrambled = "";
       const progress = step / steps;
 
@@ -65,9 +66,10 @@ export function TextScramble({
       step++;
 
       if (step > steps) {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = null;
+        animatingRef.current = false;
         setDisplayText(text);
-        setIsAnimating(false);
         onScrambleComplete?.();
       }
     }, speed * 1000);
@@ -76,6 +78,13 @@ export function TextScramble({
   useEffect(() => {
     if (!trigger) return;
     scramble();
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      animatingRef.current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trigger]);
 
