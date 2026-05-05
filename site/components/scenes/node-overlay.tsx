@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Github } from "lucide-react";
+import { ArrowLeft, ExternalLink, Github, Phone } from "lucide-react";
 import {
   aboutContent,
   projectsContent,
@@ -132,7 +132,7 @@ function AboutOverlay() {
               rel="noopener noreferrer"
               className="font-mono text-white hover:text-white/80 transition-colors inline-flex items-center"
             >
-              ryanmeyer.vercel.app (older portfolio)
+              ryanmeyer.dev (older portfolio)
               <ExternalLink size={14} className="ml-2" />
             </a>
           </li>
@@ -228,21 +228,40 @@ function ProjectsOverlay() {
 
 function ExperienceOverlay() {
   return (
-    <Section>
+    <>
       {experienceContent.map((e) => (
-        <div key={`${e.org}-${e.role}`} className="mb-10">
-          <SectionLabel>{e.period}</SectionLabel>
-          <h2 className="text-3xl font-bold tracking-tight">{e.role}</h2>
-          <p className="mt-1 text-lg text-white/70">{e.org}</p>
-          <p className="mt-4 text-base text-white/80 leading-relaxed">
-            {e.description}
-          </p>
-        </div>
+        <Section key={`${e.org}-${e.period}`}>
+          <article>
+            <SectionLabel>{e.period}</SectionLabel>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              {e.role}
+            </h2>
+            <p className="mt-1 text-lg text-white/70">
+              {e.org}
+              {e.location ? (
+                <span className="text-white/50"> · {e.location}</span>
+              ) : null}
+            </p>
+            <p className="mt-4 text-base md:text-lg text-white/80 leading-relaxed">
+              {e.description}
+            </p>
+            {e.bullets && e.bullets.length > 0 && (
+              <ul className="mt-6 space-y-3">
+                {e.bullets.map((b) => (
+                  <li
+                    key={b}
+                    className="flex items-start text-sm md:text-base text-white/75 leading-relaxed"
+                  >
+                    <span className="mr-3 mt-2 inline-block h-px w-4 bg-white/40 flex-shrink-0" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+        </Section>
       ))}
-      <p className="mt-12 text-sm font-mono uppercase tracking-[0.08em] text-white/40">
-        more entries coming as roles land — currently focused on coursework + ship-quality side projects.
-      </p>
-    </Section>
+    </>
   );
 }
 
@@ -253,7 +272,12 @@ function EducationOverlay() {
         <div key={e.school} className="mb-10">
           <SectionLabel>{e.period}</SectionLabel>
           <h2 className="text-3xl font-bold tracking-tight">{e.school}</h2>
-          <p className="mt-1 text-lg text-white/70">{e.degree}</p>
+          <p className="mt-1 text-lg text-white/70">
+            {e.degree}
+            {e.location ? (
+              <span className="text-white/50"> · {e.location}</span>
+            ) : null}
+          </p>
           {e.notes && (
             <p className="mt-4 text-base text-white/80 leading-relaxed">
               {e.notes}
@@ -294,6 +318,15 @@ function ContactOverlay() {
         </li>
         <li>
           <a
+            href={`tel:${contactContent.phone.replace(/\D/g, "")}`}
+            className="font-mono text-white hover:text-white/80 transition-colors inline-flex items-center"
+          >
+            {contactContent.phone}
+            <Phone size={14} className="ml-2" />
+          </a>
+        </li>
+        <li>
+          <a
             href={contactContent.linkedin}
             target="_blank"
             rel="noopener noreferrer"
@@ -316,12 +349,12 @@ function ContactOverlay() {
         </li>
         <li>
           <a
-            href={contactContent.previousPortfolio}
+            href={contactContent.portfolio}
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono text-white/70 hover:text-white transition-colors inline-flex items-center"
           >
-            ryanmeyer.vercel.app (older portfolio)
+            ryanmeyer.dev
             <ExternalLink size={14} className="ml-2" />
           </a>
         </li>

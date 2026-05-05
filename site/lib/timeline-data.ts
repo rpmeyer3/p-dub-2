@@ -27,7 +27,7 @@ export const timelineData: TimelineItem[] = [
     title: "About",
     date: "2026",
     content:
-      "Software engineer based in Atlanta, GA. I build full-stack web apps, ML pipelines, and cloud-native systems.",
+      "Software engineer in Atlanta, GA. Computer Science senior at UGA building data pipelines, ML systems, and full-stack web apps.",
     category: "intro",
     icon: User,
     relatedIds: [2, 5],
@@ -40,7 +40,7 @@ export const timelineData: TimelineItem[] = [
     title: "Projects",
     date: "Ongoing",
     content:
-      "Selected work across full-stack apps, data engineering, and AI tooling.",
+      "Selected work across mobile apps, ML pipelines, full-stack web, and cloud infrastructure.",
     category: "work",
     icon: Code,
     relatedIds: [1, 3],
@@ -51,9 +51,9 @@ export const timelineData: TimelineItem[] = [
     id: 3,
     slug: "experience",
     title: "Experience",
-    date: "2020 – Now",
+    date: "2024 – Now",
     content:
-      "Roles, teams, and technologies — what I've shipped and where.",
+      "Three Saia LTL Freight stints across two summers and one academic year. ETL, BI, and an end-to-end ML pipeline that cut RFP processing from months to hours.",
     category: "career",
     icon: Briefcase,
     relatedIds: [2, 4],
@@ -64,9 +64,9 @@ export const timelineData: TimelineItem[] = [
     id: 4,
     slug: "education",
     title: "Education",
-    date: "2016 – 2020",
+    date: "Expected May 2026",
     content:
-      "Computer Science background plus continuing self-taught domains.",
+      "B.S. in Computer Science with a Computer Systems emphasis at the University of Georgia.",
     category: "background",
     icon: GraduationCap,
     relatedIds: [3],
@@ -79,7 +79,7 @@ export const timelineData: TimelineItem[] = [
     title: "Contact",
     date: "Now",
     content:
-      "Reach out via email, LinkedIn, or GitHub. Open to interesting work.",
+      "Email, phone, LinkedIn, GitHub, and ryanmeyer.dev. Open to interesting work.",
     category: "connect",
     icon: Mail,
     relatedIds: [1],
