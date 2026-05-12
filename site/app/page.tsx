@@ -183,18 +183,37 @@ export default function Page() {
       .then((r) => r.json())
       .then((data) => {
         if (!data?.city || data.error) return;
+        const lat = Number(data.latitude);
+        const lng = Number(data.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return;
+        // (0,0) is ipapi's "unresolved IP" sentinel — rotating to Null Island
+        // is always wrong, so bail.
+        if (lat === 0 && lng === 0) return;
         setUserLocation({
           city: data.city,
           region: data.region ?? "",
           countryName: data.country_name ?? "",
           countryCode: data.country_code ?? "",
           regionCode: data.region_code ?? "",
-          lat: data.latitude,
-          lng: data.longitude,
+          lat,
+          lng,
         });
       })
       .catch(() => {});
   }, [dialogStep]);
+
+  // To face longitude L in cobe, phi must be -π/2 - L_rad (verified against
+  // cobe's marker vertex shader). theta = lat_rad centers the latitude.
+  const target = useMemo(() => {
+    if (!userLocation) return null;
+    if (dialogStep !== "left" && dialogStep !== "bottom") return null;
+    const HALF_PI = Math.PI / 2;
+    return {
+      phi: -HALF_PI - (userLocation.lng * Math.PI) / 180,
+      theta: (userLocation.lat * Math.PI) / 180,
+    };
+  }, [userLocation, dialogStep]);
 
   const markers = useMemo(() => {
     if (phase === "outro") return [];
@@ -338,7 +357,8 @@ export default function Page() {
                 <Globe
                   markers={markers}
                   initialPhi={LANDING_PHI}
-                  speed={computeSpeed(dialogStep, userLocation)}
+                  targetPhi={target?.phi}
+                  targetTheta={target?.theta}
                 />
 
                 <AnimatePresence>
@@ -459,17 +479,3 @@ function WhitePageContent({ trollStep }: { trollStep: number }) {
   );
 }
 
-function computeSpeed(
-  step: DialogStep,
-  loc: UserLocation | null,
-): number {
-  if (step !== "left" || !loc) return 0;
-  const TAU = Math.PI * 2;
-  const userPhi = (loc.lng * Math.PI) / 180;
-  let diff = ((userPhi - LANDING_PHI) % TAU + TAU) % TAU;
-  if (diff > Math.PI) diff -= TAU;
-  // |diff| <= 90° = pin already on the visible side, no rotation needed
-  if (Math.abs(diff) <= Math.PI / 2) return 0;
-  // Rotate toward the pin (sign of diff). Magnitude controls spin rate.
-  return Math.sign(diff) * 0.005;
-}

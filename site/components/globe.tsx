@@ -35,6 +35,8 @@ interface GlobeProps {
   diffuse?: number;
   mapSamples?: number;
   initialPhi?: number;
+  targetPhi?: number;
+  targetTheta?: number;
 }
 
 const DEFAULT_MARKERS: Marker[] = [];
@@ -63,6 +65,8 @@ export function Globe({
   diffuse = 1.5,
   mapSamples = 16000,
   initialPhi = 0,
+  targetPhi,
+  targetTheta,
 }: GlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pointerInteracting = useRef<{ x: number; y: number } | null>(null);
@@ -74,6 +78,8 @@ export function Globe({
   const isPausedRef = useRef(false);
   const phiRef = useRef(initialPhi);
   const speedRef = useRef(speed);
+  const targetPhiRef = useRef<number | undefined>(targetPhi);
+  const targetThetaRef = useRef<number | undefined>(targetTheta);
   // Pre-shaped marker/arc arrays in cobe's expected format. Cached when
   // props change so the rAF loop doesn't allocate 60 fresh arrays + 60×N
   // fresh objects per second (heavier than it sounds with GC pressure).
@@ -91,6 +97,14 @@ export function Globe({
   useEffect(() => {
     speedRef.current = speed;
   }, [speed]);
+
+  useEffect(() => {
+    targetPhiRef.current = targetPhi;
+  }, [targetPhi]);
+
+  useEffect(() => {
+    targetThetaRef.current = targetTheta;
+  }, [targetTheta]);
 
   useEffect(() => {
     cobeMarkersRef.current = markers.map((m) => ({
@@ -196,9 +210,16 @@ export function Globe({
 
       function animate() {
         if (!isPausedRef.current) {
-          phiRef.current += speedRef.current;
-        }
-        if (!isPausedRef.current) {
+          if (targetPhiRef.current !== undefined) {
+            const TAU = Math.PI * 2;
+            let delta =
+              ((targetPhiRef.current - phiRef.current) % TAU + TAU) % TAU;
+            if (delta > Math.PI) delta -= TAU;
+            if (Math.abs(delta) > 0.0005) phiRef.current += delta * 0.06;
+          } else {
+            phiRef.current += speedRef.current;
+          }
+
           if (
             Math.abs(velocity.current.phi) > 0.0001 ||
             Math.abs(velocity.current.theta) > 0.0001
@@ -208,12 +229,27 @@ export function Globe({
             velocity.current.phi *= 0.95;
             velocity.current.theta *= 0.95;
           }
-          const thetaMin = -0.4;
-          const thetaMax = 0.4;
-          if (thetaOffsetRef.current < thetaMin) {
-            thetaOffsetRef.current += (thetaMin - thetaOffsetRef.current) * 0.1;
-          } else if (thetaOffsetRef.current > thetaMax) {
-            thetaOffsetRef.current += (thetaMax - thetaOffsetRef.current) * 0.1;
+
+          if (targetThetaRef.current !== undefined) {
+            // Clamp polar latitudes so the globe never tips past ~40°.
+            const THETA_CLAMP = 0.7;
+            const clamped = Math.max(
+              -THETA_CLAMP,
+              Math.min(THETA_CLAMP, targetThetaRef.current),
+            );
+            const targetOffset = clamped - theta;
+            const tDelta = targetOffset - thetaOffsetRef.current;
+            if (Math.abs(tDelta) > 0.0005) {
+              thetaOffsetRef.current += tDelta * 0.06;
+            }
+          } else {
+            const thetaMin = -0.4;
+            const thetaMax = 0.4;
+            if (thetaOffsetRef.current < thetaMin) {
+              thetaOffsetRef.current += (thetaMin - thetaOffsetRef.current) * 0.1;
+            } else if (thetaOffsetRef.current > thetaMax) {
+              thetaOffsetRef.current += (thetaMax - thetaOffsetRef.current) * 0.1;
+            }
           }
         }
         globe!.update({
